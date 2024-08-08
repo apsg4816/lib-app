@@ -3,7 +3,7 @@ from sqlalchemy import or_, and_, func
 from flask import Blueprint, request, Response, make_response
 import json
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from flask import Flask, request, jsonify, current_app, send_file
+from flask import Flask, request, jsonify, current_app, send_file,send_from_directory
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, unset_jwt_cookies
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -29,6 +29,18 @@ celery.conf.update(app.config)
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
+
+# Merging of frontend and backend ports (now frontend will work under backend port)
+frontend_folder_dist= os.path.join(os.getcwd(),"..","elibrary","dist")
+
+# Route to serve the static files from "dist" folder under frontend "elibrary" folder
+# So any other routes other than our requested api routes from frontend is going to serve our below files
+@app.route("/",defaults={"filename":""}) #This is the root route which is giving it the string filename
+@app.route("/<path:filename>") #this is dynamic route for filename ... where we will define a function 
+def index(filename):
+    if not filename:
+        filename = "index.html" #index.html is present in dist folder
+    return send_from_directory(frontend_folder_dist,filename)
 
 
 # User model
@@ -687,9 +699,6 @@ def export_book_data():
         return response
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
-
 
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run()
